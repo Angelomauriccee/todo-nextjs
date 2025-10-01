@@ -1,7 +1,6 @@
-// src/utils/dexieDB.ts
+// utils/dexieDB.ts
 import Dexie, { Table } from "dexie";
 
-// 🔹 Define the Todo type (should match your other file)
 export interface Todo {
   id: number;
   userId: number;
@@ -9,9 +8,8 @@ export interface Todo {
   completed: boolean;
 }
 
-// 🔹 Extend Dexie with types
 class TodoDatabase extends Dexie {
-  todos!: Table<Todo>;
+  todos!: Table<Todo, number>;
 
   constructor() {
     super("TodoDatabase");
