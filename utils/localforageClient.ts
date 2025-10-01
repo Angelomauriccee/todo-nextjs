@@ -1,5 +1,5 @@
 // utils/localforageClient.ts
-import localforage, { type LocalForage } from "localforage";
+import localforage from "localforage";
 
 // Create a named instance (same as before)
 const forageClient: LocalForage = localforage.createInstance({
