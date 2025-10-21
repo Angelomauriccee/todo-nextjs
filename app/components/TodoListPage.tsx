@@ -1,3 +1,4 @@
+// components/TodoListPage.tsx
 "use client";
 
 import { Trash2, Search, Clock, CheckCircle2, Pencil, Loader } from "lucide-react";
@@ -6,8 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import forageClient from "@/utils/localforageClient";
-import db from "@/utils/dexieDB";
+import forageClient from "@/utils/localforageClient"; // SSR-safe wrapper
+import db from "@/utils/dexieDB"; // SSR-safe wrapper
 
 // 🔹 Define Todo type
 export interface Todo {
@@ -18,7 +19,7 @@ export interface Todo {
   isFake?: boolean; // for optimistic updates
 }
 
-export default function TodoList() {
+export default function TodoListPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedIdParam = searchParams.get("id");
@@ -55,28 +56,37 @@ export default function TodoList() {
   const { data = [], isPending, isError } = useQuery<Todo[]>({
     queryKey: ["todos"],
     queryFn: async (): Promise<Todo[]> => {
-      // Client-only API
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const isBrowser = typeof window !== "undefined";
+
+      // Offline-first (browser only)
+      if (isBrowser && typeof navigator !== "undefined" && !navigator.onLine) {
         const offlineTodos = await db.todos.toArray();
         return offlineTodos;
       }
 
-      const cached = await forageClient.getItem<Todo[]>("todos");
-      if (cached) return cached;
+      // localforage cache (browser only)
+      if (isBrowser) {
+        const cached = await forageClient.getItem<Todo[]>("todos");
+        if (cached) return cached;
+      }
 
-      const res = await fetch("https://jsonplaceholder.typicode.com/todos");
+      // Network
+      const res = await fetch("https://jsonplaceholder.typicode.com/todos", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch todos");
       const todos: Todo[] = await res.json();
 
-      await forageClient.setItem("todos", todos);
-      await db.todos.clear();
-      await db.todos.bulkAdd(todos);
+      // Persist (browser only)
+      if (isBrowser) {
+        await forageClient.setItem("todos", todos);
+        await db.todos.clear();
+        await db.todos.bulkAdd(todos);
+      }
 
       return todos;
     },
   });
 
-  // 🔹 Update todo (used by handleUpdate)
+  // 🔹 Update todo
   const { mutateAsync: updateTodo } = useMutation({
     mutationFn: async ({ id, title, completed }: { id: number; title: string; completed: boolean }): Promise<Todo> => {
       if (id > 200) {

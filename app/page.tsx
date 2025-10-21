@@ -1,13 +1,10 @@
-"use client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import TodoListPage from "@/app/components/TodoListPage";
+// app/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-const queryClient = new QueryClient();
+import ClientRoot from "./ClientRoot";
 
 export default function Page() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TodoListPage />
-    </QueryClientProvider>
-  );
+  return <ClientRoot />;
 }
+
